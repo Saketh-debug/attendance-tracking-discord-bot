@@ -5,12 +5,20 @@ from db import fetch_sections,fetch_section_attendance_matrix
 from features.excel_export import build_excel
 from features.pdf_reports import generate_section_pdf,generate_student_stats_pdf
 import os
+from ui import MainMenuView
 from config import DISCORD_TOKEN
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+@bot.command()
+async def start(ctx):
+    await ctx.send(
+        "What do you want to do?",
+        view=MainMenuView(ctx)
+    )
 
 @bot.event
 async def on_ready():
