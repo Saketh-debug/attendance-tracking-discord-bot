@@ -1,0 +1,38 @@
+# Environments
+.env
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs and databases
+*.log
+discord.log
+
+# Build artifacts
+build/
+dist/
+*.spec
+
+# Test outputs and data
+*.xlsx
+*.pdf
+test_*.xlsx
+test_*.pdf
+
+# AI/Editor configurations
+.vscode/
+.idea/
+.zencoder/
+.zenflow/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
