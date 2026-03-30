@@ -36,3 +36,7 @@ test_*.pdf
 .pytest_cache/
 .coverage
 htmlcov/
+__pycache__/
+*.pyc
+*.pyo
+.env
