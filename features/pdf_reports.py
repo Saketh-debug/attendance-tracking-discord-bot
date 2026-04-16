@@ -2,54 +2,144 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 def generate_section_pdf(section_name, rows, date_str, file_path):
-    # Rows: [(serial, name, status), ...]
-    # We want two columns: Present List | Absent List
+    """
+    Generates a polished two-column (Present | Absent) attendance PDF.
+    Rows: [(serial_no, name, status), ...]
+    """
+    # --- Layout constants ---
+    LEFT_MARGIN  = 40
+    RIGHT_MARGIN = 555          # A4 width ≈ 595
+    MID_X        = 300          # divider / right-column start
+    COL1_X       = LEFT_MARGIN  # Present column text start
+    COL2_X       = MID_X + 10  # Absent column text start
+    ROW_H        = 16
+    HEADER_H     = 22           # height of the green/red column header bar
+
     present = [r for r in rows if r[2] == 'P']
-    absent = [r for r in rows if r[2] == 'A']
-    
+    absent  = [r for r in rows if r[2] == 'A']
+    total   = len(rows)
+    pct     = (len(present) / total * 100) if total else 0
+
     c = canvas.Canvas(file_path, pagesize=A4)
     width, height = A4
-    
-    y = height - 50
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, y, f"{section_name.upper()} - Attendance ({date_str})")
+
+    # ------------------------------------------------------------------ #
+    #  Helper: draw the two-column headers (green Present / red Absent)   #
+    # ------------------------------------------------------------------ #
+    def draw_col_headers(y_pos):
+        # Green banner — Present
+        c.setFillColorRGB(0.13, 0.55, 0.13)
+        c.rect(COL1_X, y_pos - 5, MID_X - COL1_X - 5, HEADER_H, fill=1, stroke=0)
+        c.setFillColorRGB(1, 1, 1)
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(COL1_X + 6, y_pos + 3, f"✓  Present  ({len(present)})")
+
+        # Red banner — Absent
+        c.setFillColorRGB(0.75, 0.12, 0.12)
+        c.rect(COL2_X - 5, y_pos - 5, RIGHT_MARGIN - COL2_X + 5, HEADER_H, fill=1, stroke=0)
+        c.setFillColorRGB(1, 1, 1)
+        c.drawString(COL2_X + 2, y_pos + 3, f"✗  Absent  ({len(absent)})")
+
+        return y_pos - (HEADER_H + 4)
+
+    # ------------------------------------------------------------------ #
+    #  PAGE 1: Title banner + summary stats bar                           #
+    # ------------------------------------------------------------------ #
+    y = height - 40
+
+    # --- Title banner ---
+    c.setFillColorRGB(0.12, 0.22, 0.45)   # dark navy
+    c.rect(LEFT_MARGIN, y - 6, RIGHT_MARGIN - LEFT_MARGIN, 30, fill=1, stroke=0)
+    c.setFillColorRGB(1, 1, 1)
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(LEFT_MARGIN + 8, y + 4, f"{section_name.upper()}  —  Attendance Report")
     y -= 40
-    
-    # Grid Layout
-    # Left: Present, Right: Absent
-    col1_x = 50
-    col2_x = 300
-    
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(col1_x, y, f"Present ({len(present)})")
-    c.drawString(col2_x, y, f"Absent ({len(absent)})")
-    y -= 20
-    
+
+    # --- Date line ---
+    c.setFillColorRGB(0.3, 0.3, 0.3)
     c.setFont("Helvetica", 10)
-    
-    # Determine max rows to iterate
-    max_len = max(len(present), len(absent))
-    
-    start_y = y
-    
+    c.drawString(LEFT_MARGIN, y, f"Date: {date_str}")
+    y -= 22
+
+    # --- Summary stats bar ---
+    box_w  = (RIGHT_MARGIN - LEFT_MARGIN) / 4 - 4
+    stats  = [
+        ("Total Students", str(total),          (0.20, 0.20, 0.20)),
+        ("Present",        str(len(present)),   (0.13, 0.55, 0.13)),
+        ("Absent",         str(len(absent)),    (0.75, 0.12, 0.12)),
+        ("Attendance %",   f"{pct:.1f}%",       (0.15, 0.35, 0.65)),
+    ]
+    bx = LEFT_MARGIN
+    for label, value, colour in stats:
+        r, g, b = colour
+        c.setFillColorRGB(r, g, b)
+        c.roundRect(bx, y - 24, box_w, 40, 4, fill=1, stroke=0)
+        c.setFillColorRGB(1, 1, 1)
+        c.setFont("Helvetica-Bold", 14)
+        c.drawCentredString(bx + box_w / 2, y + 4, value)
+        c.setFont("Helvetica", 8)
+        c.drawCentredString(bx + box_w / 2, y - 14, label)
+        bx += box_w + 5
+    y -= 50
+
+    # --- Thin separator ---
+    c.setStrokeColorRGB(0.7, 0.7, 0.7)
+    c.setLineWidth(0.5)
+    c.line(LEFT_MARGIN, y, RIGHT_MARGIN, y)
+    y -= 14
+
+    # --- Column headers ---
+    y = draw_col_headers(y)
+    y -= 6
+
+    # ------------------------------------------------------------------ #
+    #  Data rows — two-column, alternating shading                        #
+    # ------------------------------------------------------------------ #
+    c.setFont("Helvetica", 10)
+    max_len = max(len(present), len(absent), 1)
+
     for i in range(max_len):
-        if y < 50:
+        # Page break — reprint column headers
+        if y < 55:
             c.showPage()
-            y = height - 50
-            # Header again? Optional.
+            y = height - 40
+            # Compact repeat header
+            c.setFillColorRGB(0.12, 0.22, 0.45)
+            c.rect(LEFT_MARGIN, y - 6, RIGHT_MARGIN - LEFT_MARGIN, 22, fill=1, stroke=0)
+            c.setFillColorRGB(1, 1, 1)
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(LEFT_MARGIN + 8, y + 2,
+                         f"{section_name.upper()}  —  {date_str}  (continued)")
+            y -= 36
+            y = draw_col_headers(y)
+            y -= 6
             c.setFont("Helvetica", 10)
 
-        # Present Name
+        # Alternating row background
+        if i % 2 == 0:
+            c.setFillColorRGB(0.95, 0.95, 0.95)
+            c.rect(LEFT_MARGIN, y - 3, RIGHT_MARGIN - LEFT_MARGIN, ROW_H,
+                   fill=1, stroke=0)
+
+        # Centre divider
+        c.setStrokeColorRGB(0.75, 0.75, 0.75)
+        c.setLineWidth(0.4)
+        c.line(MID_X, y - 3, MID_X, y + ROW_H - 3)
+
+        # Present entry
         if i < len(present):
             s_no, name, _ = present[i]
-            c.drawString(col1_x, y, f"{s_no}. {name}")
-            
-        # Absent Name
+            c.setFillColorRGB(0.10, 0.10, 0.10)
+            c.drawString(COL1_X + 4, y, f"{s_no}.  {name}")
+
+        # Absent entry
         if i < len(absent):
             s_no, name, _ = absent[i]
-            c.drawString(col2_x, y, f"{s_no}. {name}")
-            
-        y -= 15
+            c.setFillColorRGB(0.55, 0.05, 0.05)   # dark red for absent names
+            c.drawString(COL2_X + 2, y, f"{s_no}.  {name}")
+
+        c.setFillColorRGB(0, 0, 0)
+        y -= ROW_H
 
     c.save()
 

@@ -332,10 +332,39 @@ class SubmitAttendanceButton(discord.ui.Button):
             )
 
             if success:
-                await interaction.followup.send(
-                    f"✅ Attendance marked for **{self.section_name}**.\n"
-                    f"Absentees: {all_absentees if all_absentees else 'None (all present)'}"
-                )
+                if not all_absentees:
+                    await interaction.followup.send(
+                        f"✅ Attendance marked for **{self.section_name}**.\n"
+                        f"🎉 All students are present today!"
+                    )
+                else:
+                    # Fetch all students to resolve serial numbers → names
+                    students = await asyncio.to_thread(
+                        get_students_in_section, self.session.section_id
+                    )
+                    # Build a lookup map: serial_no → name
+                    name_map = {sno: name for sno, name in students}
+
+                    # Sort absentees by serial number and build the display list
+                    sorted_absentees = sorted(all_absentees)
+                    lines = [
+                        f"  `{sno}` — {name_map.get(sno, 'Unknown')}"
+                        for sno in sorted_absentees
+                    ]
+                    absentee_list = "\n".join(lines)
+
+                    message = (
+                        f"✅ Attendance marked for **{self.section_name}**.\n\n"
+                        f"🔴 **Absentees ({len(sorted_absentees)})**:\n"
+                        f"{absentee_list}"
+                    )
+
+                    # Discord message limit guard
+                    if len(message) > 2000:
+                        await interaction.followup.send(message[:2000])
+                        await interaction.followup.send(message[2000:])
+                    else:
+                        await interaction.followup.send(message)
             else:
                 self.session.submitted = False  # allow retry on failure
                 await interaction.followup.send(f"❌ {msg}", ephemeral=True)
