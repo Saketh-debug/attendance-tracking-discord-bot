@@ -3,6 +3,7 @@ from discord.ext import commands
 import asyncio
 import os
 import logging
+from aiohttp import web
 
 from db import (
     get_section_id,
@@ -27,6 +28,30 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+health_runner = None
+
+
+async def health_check(request):
+    return web.Response(text="Attendance bot is alive.")
+
+
+async def start_health_server():
+    global health_runner
+
+    if health_runner:
+        return
+
+    app = web.Application()
+    app.router.add_get("/", health_check)
+    app.router.add_get("/health", health_check)
+
+    health_runner = web.AppRunner(app)
+    await health_runner.setup()
+
+    port = int(os.getenv("PORT", "8080"))
+    site = web.TCPSite(health_runner, "0.0.0.0", port)
+    await site.start()
+    print(f"Health server running on port {port}.")
 
 
 def parse_college_from_channel(channel_name: str) -> str | None:
@@ -80,6 +105,7 @@ async def start(ctx):
 
 @bot.event
 async def on_ready():
+    await start_health_server()
     print("Attendance Bot is online.")
 
 

@@ -1,44 +1,49 @@
-# Environments
+# Environment and secrets
 .env
+.env.*
+!.env.example
+
+# Virtual environments
 venv/
 env/
 ENV/
+.venv/
 env.bak/
 venv.bak/
 
-# Byte-compiled / optimized / DLL files
+# Python cache and tooling
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
-# Logs and databases
+# Logs and local runtime files
 *.log
 discord.log
+*.db
+*.sqlite
+*.sqlite3
 
-# Build artifacts
+# Build and packaging artifacts
 build/
 dist/
 *.spec
+*.egg-info/
 
-# Test outputs and data
+# Generated reports and test exports
 *.xlsx
 *.pdf
 test_*.xlsx
 test_*.pdf
+attendance_master_*.xlsx
+student_statistics.pdf
 
-# AI/Editor configurations
+# Editor and local AI tool state
 .vscode/
 .idea/
 .zencoder/
 .zenflow/
-
-# Pytest / coverage
-.pytest_cache/
-.coverage
-htmlcov/
-__pycache__/
-*.pyc
-*.pyo
-.env
-.env
-dist/.env
