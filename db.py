@@ -1,9 +1,16 @@
 import psycopg2
 from psycopg2 import pool
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import os
 from dotenv import load_dotenv
 import sys
+
+IST = ZoneInfo("Asia/Kolkata")
+
+
+def today_ist():
+    return datetime.now(IST).date()
 
 # Resolve .env path (same logic as config.py so it works both as script and packaged exe)
 if getattr(sys, 'frozen', False):
@@ -138,7 +145,7 @@ def fetch_low_attendance_all(threshold, college_id):
         db_pool.putconn(conn)
 
 def fetch_section_attendance(section_id):
-    today = date.today()
+    today = today_ist()
     conn = db_pool.getconn()
     try:
         cur = conn.cursor()
@@ -183,7 +190,7 @@ def get_students_in_section(section_id):
         db_pool.putconn(conn)
 
 def mark_attendance(section_id, absentees):
-    today = date.today()
+    today = today_ist()
     conn = db_pool.getconn()
     try:
         cur = conn.cursor()
