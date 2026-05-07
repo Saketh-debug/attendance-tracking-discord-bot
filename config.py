@@ -24,5 +24,15 @@ else:
 # Force dotenv to load exactly from that path
 load_dotenv(dotenv_path=env_path)
 
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+
+def get_env_value(key, default=None):
+    value = os.getenv(key, default)
+    if isinstance(value, str):
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+    return value
+
+
+DISCORD_TOKEN = get_env_value("DISCORD_TOKEN")
 ENV_PATH_USED = env_path

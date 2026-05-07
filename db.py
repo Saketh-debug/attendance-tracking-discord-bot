@@ -17,13 +17,23 @@ else:
 
 load_dotenv(dotenv_path=env_path)
 
+
+def get_env_value(key, default=None):
+    value = os.getenv(key, default)
+    if isinstance(value, str):
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+    return value
+
+
 db_pool = pool.SimpleConnectionPool(
     1, 20,
-    dbname=os.getenv("DB_NAME", "postgres"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASS"),
-    host=os.getenv("DB_HOST"),
-    port=os.getenv("DB_PORT", "6543"),
+    dbname=get_env_value("DB_NAME", "postgres"),
+    user=get_env_value("DB_USER"),
+    password=get_env_value("DB_PASS"),
+    host=get_env_value("DB_HOST"),
+    port=get_env_value("DB_PORT", "6543"),
     sslmode="require"
 )
 
